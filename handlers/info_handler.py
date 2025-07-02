@@ -6,7 +6,7 @@ def show_info_menu(bot, message):
     buttons = [
         types.InlineKeyboardButton("История компании", callback_data="history"),
         types.InlineKeyboardButton("Ценности", callback_data="values"),
-        types.InlineKeyboardButton("Назад", callback_data="back_to_main")
+        types.InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")
     ]
 
     markup.add(*buttons)
