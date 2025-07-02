@@ -19,5 +19,5 @@ def register_menu_handlers(bot):
             from handlers.support_handler import show_support
             show_support(bot, call.message)
         elif call.data == "back_to_main":
-            from handlers.start_handler import send_welcome
-            send_welcome(call.message)
+            from handlers.start_handler import show_main_menu
+            show_main_menu(bot, call.message)
