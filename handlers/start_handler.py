@@ -31,9 +31,9 @@ def register_start_handler(bot):
         bot.send_message(message.chat.id, "Привет! Я твой бот.", reply_markup = markup) """
 
 
-        
+
         markup = types.InlineKeyboardMarkup()
-        btn1 = types.InlineKeyboardButton('Информация о компании ТЭК', callback_data="что-то")
+        btn1 = types.InlineKeyboardButton('Информация о компании ТЭК', callback_data="info")
         markup.row(btn1)
         btn2 = types.InlineKeyboardButton('Экскурсии по компании', callback_data="что-то")
         markup.row(btn2)
@@ -56,3 +56,14 @@ def register_start_handler(bot):
         btn11 = types.InlineKeyboardButton('Поддержка и помощь', callback_data="что-то")
         markup.row(btn11)
         bot.send_message(message.chat.id, "Привет! Я твой бот.", reply_markup = markup) 
+
+    @bot.callback_query_handler(func = lambda callback: True)
+    def callback_nav(callback):
+        match callback.data:
+            case 'info':
+                markup = types.ReplyKeyboardMarkup()
+                btn1 = types.KeyboardButton('Информация о компании ТЭК')
+                markup.row(btn1)
+                btn2 = types.KeyboardButton('Экскурсии по компании')
+                markup.row(btn2)
+                bot.send_message(callback.message.chat.id, "Навигация", reply_markup = markup)
