@@ -1,22 +1,62 @@
-# This is a simple echo bot using the decorator mechanism.
-# It echoes any incoming text messages.
+import pandas as pd
+import secrets
+import hashlib
+from database.models import User, User_info, Authorized_users
+from database.session import SessionLocal, engine, Base
+import os
+
+
+# Создаем таблицы, если их нет
+Base.metadata.create_all(bind=engine)
 
 
 
-# Handle '/start' and '/help'
-def start(bot):
-    @bot.message_handler(commands=['help', 'start'])
-    def send_welcome(message):
-        bot.reply_to(message, """\
-    Hi there, I am EchoBot.
-    I am here to echo your kind words back to you. Just say anything nice and I'll say the exact same thing to you!\
-    """)
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
 
 
-# Handle all other messages with content_type 'text' (content_types defaults to ['text'])
-def loop(bot):
-    @bot.message_handler(func=lambda message: True)
-    def echo_message(message):
-        bot.reply_to(message, message.text)
+def generate_unique_code() -> str:
+    return secrets.token_urlsafe(8)
 
 
+def import_employees_from_csv(csv_path: str):
+    db = SessionLocal()
+
+    df = pd.read_csv(csv_file, encoding='utf-16', sep='\s{2,}', engine='python')
+
+    for _, row in df.iterrows():
+        name = row['name']
+        mail = row['mail']
+        office = row['office']
+        officephone = row['officephone']
+
+        auth_token = generate_unique_code()
+        hashpass = hash_password(auth_token)
+
+        # Добавляем запись User_info
+        user_info = User_info(
+            full_name=name,
+            mail=mail,
+            office=office,
+            officephone=officephone,
+            auth_token=auth_token
+        )
+
+        # Добавляем запись User
+        user = User(
+            auth_token=auth_token,
+            hash_pass=hashpass
+        )
+
+        db.add(user_info)
+        db.add(user)
+
+        print(f"[{name}] | Token: {auth_token}")
+
+    db.commit()
+    db.close()
+
+
+if __name__ == "__main__":
+    csv_file = "data/users.csv"
+    import_employees_from_csv(csv_file)
