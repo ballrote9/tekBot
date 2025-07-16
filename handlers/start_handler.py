@@ -1,8 +1,8 @@
 from telebot import types
 import hashlib
-from database.models import User, User_info
+from database.models import User, User_info, Authorized_users
 from database.session import SessionLocal
-from database.helpers import verify_password
+
 
 def show_main_menu(bot, message):
     markup = types.InlineKeyboardMarkup(row_width=1)
@@ -23,12 +23,73 @@ def show_main_menu(bot, message):
 
 # --- Регистрация обработчиков ---
 def register_start_handler(bot):
+    # Авторизация Пользователей
+    def handle_password(message, sent=None):
+        entered_password = message.text.strip()
+        hashed_password = hashlib.sha256(entered_password.encode()).hexdigest()
+        telegram_id = message.from_user.id
+        found = False
+        db = SessionLocal()
+
+        # Ищем пользователя среди уже авторизованных для избежания повторного входа по чужому паролю
+        auth_user = db.query(Authorized_users).filter(Authorized_users.auth_token == telegram_id).first()
+        if auth_user:
+            if hashed_password == auth_user.user.hash_pass:
+                found = True
+                user = auth_user.user
+            else: 
+                bot.delete_message(message.chat.id, sent.message_id)
+                bot.delete_message(message.chat.id, message.message_id)
+                sent = bot.send_message(message.chat.id, "Неверный пароль.\r\nПопробуйте еще раз!")
+            
+                bot.register_next_step_handler(message, handle_password, sent)
+                return
+        # Поиск пользователя среди всех юзеров
+        if not found:
+            user_entry = db.query(User)
+            for user in user_entry:
+                if hashed_password == user.hash_pass and not user.is_authorized:
+                    found = True
+                    break
+
+        if not found:
+            bot.delete_message(message.chat.id, sent.message_id)
+            bot.delete_message(message.chat.id, message.message_id)
+            sent = bot.send_message(message.chat.id, "Неверный пароль.\r\nПопробуйте еще раз!")
+            
+            bot.register_next_step_handler(message, handle_password, sent)
+            return
+        
+
+        # Обновляем auth_token на telegram_id в обеих таблицах
+        if not user.is_authorized:
+            user_info = user.user_info
+            user_info.auth_token = str(telegram_id)
+            user.auth_token = str(telegram_id)
+            user.is_authorized = True
+            db.add(Authorized_users(
+                auth_token = user.auth_token
+            ))
+            db.commit()
+
+            bot.delete_message(message.chat.id, sent.message_id)
+            bot.delete_message(message.chat.id, message.message_id)
+            bot.send_message(message.chat.id, f"Вы успешно авторизованы, {user_info.full_name}!")
+
+        else:
+            bot.delete_message(message.chat.id, sent.message_id)
+            bot.delete_message(message.chat.id, message.message_id)
+            bot.send_message(message.chat.id, f"Вы успешно авторизованы, {user.user_info.full_name}!")
+        db.close()
+
+    
     @bot.message_handler(commands=["start"])
     def send_welcome(message):
-        bot.send_message(
+        sent = bot.send_message(
             message.chat.id,
             "Введите пароль:"
         )
+        bot.register_next_step_handler(message, handle_password, sent)
     
     @bot.message_handler(commands=['profile'])
     def profile(message):
@@ -52,42 +113,3 @@ def register_start_handler(bot):
         show_main_menu(bot, message)
         
     
-def catching_all_masseges(bot):
-    @bot.message_handler(func=lambda message: True)
-    def handle_password(message):
-        entered_password = message.text.strip()
-        telegram_id = message.from_user.id
-        users_id = None
-        db = SessionLocal()
-
-        # Ищем пользователя по паролю
-        user_entry = db.query(User)
-
-        found = False
-        for user in user_entry:
-            if hashlib.sha256(entered_password.encode()).hexdigest() == user.hash_pass:
-                found = True
-                users_id = user.auth_token
-                break
-
-        if not found:
-            bot.reply_to(message, "Неверный пароль.")
-            return
-
-        # Обновляем auth_token на telegram_id в обеих таблицах
-        # db.commit()
-        if (telegram_id != users_id):
-            user_info = db.query(User_info).filter(User_info.auth_token == user.auth_token).first()
-            if user_info:
-                user_info.auth_token = str(telegram_id)
-                user.auth_token = str(telegram_id)
-                db.commit()
-                bot.reply_to(message, f"Вы успешно авторизованы, {user_info.full_name}!")
-            else:
-                bot.reply_to(message, "Ошибка: данные не найдены.")
-        else:
-            bot.reply_to(message, f"Вы успешно авторизованы, {user_info.full_name}!")
-        db.close()
-        #Unique error (try/catch)
-        
-        

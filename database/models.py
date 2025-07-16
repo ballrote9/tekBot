@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from database.session import Base
 
@@ -6,8 +6,11 @@ class User(Base):
     __tablename__ = 'users'
     
     id = Column(Integer, primary_key=True)
-    auth_token = Column(String(64), unique=True, index=True)  # ID пользователя из Telegram
+    auth_token = Column(String(64), ForeignKey('about_users.auth_token'), unique=True)
     hash_pass = Column(String(128))
+    is_authorized = Column(Boolean)
+
+    user_info = relationship("User_info", foreign_keys=[auth_token], uselist=False)
 
 
 class User_info(Base):
@@ -22,14 +25,11 @@ class User_info(Base):
     username = Column(String(50), nullable=True)
     auth_token = Column(String(64), ForeignKey('users.auth_token'), unique=True)
     
-    # Теперь SQLAlchemy знает, как связать таблицы
-    user = relationship("User", foreign_keys=[auth_token], uselist=False)
     
 class Authorized_users(Base):
     __tablename__ = "Authorized_users"
     
     id = Column(Integer, primary_key=True)
-    auth_token = Column(String(64), ForeignKey('about_users.auth_token'), unique=True)
-    hash_pass = Column(String(128))
+    auth_token = Column(String(64), ForeignKey('users.auth_token'), unique=True)
     
-    user_info = relationship("User_info", foreign_keys=[auth_token], uselist=False)
+    user = relationship("User", foreign_keys=[auth_token], uselist=False)

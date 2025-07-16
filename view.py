@@ -20,7 +20,7 @@ for table in tables:
     cursor.execute(f"SELECT * FROM {table[0]}")
     rows = cursor.fetchall()
     print("\nДанные:")
-    for row in rows[:50]:
+    for row in rows[:5]:
         print(row)
 
 conn.close()
