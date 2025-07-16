@@ -1,4 +1,7 @@
 from telebot import types
+from database.models import Content
+from database.session import SessionLocal
+import os
 
 def register_menu_handlers(bot):
     @bot.callback_query_handler(func=lambda call: True)
@@ -19,6 +22,31 @@ def register_menu_handlers(bot):
         elif call.data == "support":
             from handlers.support_handler import show_support
             show_support(bot, call.message)
+
+        # --- Подменю "Информация о компании" ---
+        elif call.data == "history":
+            db = SessionLocal()
+            content = db.query(Content).filter(Content.section == "history").first()
+            if content:
+                bot.send_message(call.message.chat.id, f"📌 {content.title}\n\n{content.text}")
+                if content.file_path and os.path.exists(content.file_path):
+                    with open(content.file_path, "rb") as f:
+                        bot.send_document(call.message.chat.id, f)
+            else:
+                bot.send_message(call.message.chat.id, "Информация пока недоступна.")
+            db.close()
+
+        elif call.data == "values":
+            db = SessionLocal()
+            content = db.query(Content).filter(Content.section == "values").first()
+            if content:
+                bot.send_message(call.message.chat.id, f"💎 {content.title}\n\n{content.text}")
+                if content.file_path and os.path.exists(content.file_path):
+                    with open(content.file_path, "rb") as f:
+                        bot.send_document(call.message.chat.id, f)
+            else:
+                bot.send_message(call.message.chat.id, "Информация пока недоступна.")
+            db.close()
 
         # --- Подменю "Информация для сотрудников" ---
         elif call.data == "training_materials":

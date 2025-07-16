@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Text
 from sqlalchemy.orm import relationship
 from database.session import Base
 
@@ -33,3 +33,12 @@ class Authorized_users(Base):
     auth_token = Column(String(64), ForeignKey('users.auth_token'), unique=True)
     
     user = relationship("User", foreign_keys=[auth_token], uselist=False)
+
+class Content(Base):
+    __tablename__ = 'content'
+
+    id = Column(Integer, primary_key=True)
+    section = Column(String(50), unique=True, nullable=False)  # 'history', 'values'
+    title = Column(String(100), nullable=False)
+    text = Column(Text, nullable=True)
+    file_path = Column(String(255), nullable=True)  # например: 'data/company_info/history.pdf'
