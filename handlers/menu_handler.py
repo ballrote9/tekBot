@@ -1,6 +1,7 @@
 from telebot import types
 from database.models import Content
 from database.session import SessionLocal
+from database.content_session import ContentSessionLocal
 import os
 
 def register_menu_handlers(bot):
@@ -25,25 +26,27 @@ def register_menu_handlers(bot):
 
         # --- Подменю "Информация о компании" ---
         elif call.data == "history":
-            db = SessionLocal()
+            db = ContentSessionLocal()
             content = db.query(Content).filter(Content.section == "history").first()
             if content:
                 bot.send_message(call.message.chat.id, f"📌 {content.title}\n\n{content.text}")
-                if content.file_path and os.path.exists(content.file_path):
-                    with open(content.file_path, "rb") as f:
-                        bot.send_document(call.message.chat.id, f)
+                for file in content.files:
+                    if os.path.exists(file.file_path):
+                        with open(file.file_path, "rb") as f:
+                            bot.send_document(call.message.chat.id, f)
             else:
                 bot.send_message(call.message.chat.id, "Информация пока недоступна.")
             db.close()
 
         elif call.data == "values":
-            db = SessionLocal()
+            db = ContentSessionLocal()
             content = db.query(Content).filter(Content.section == "values").first()
             if content:
                 bot.send_message(call.message.chat.id, f"💎 {content.title}\n\n{content.text}")
-                if content.file_path and os.path.exists(content.file_path):
-                    with open(content.file_path, "rb") as f:
-                        bot.send_document(call.message.chat.id, f)
+                for file in content.files:
+                    if os.path.exists(file.file_path):
+                        with open(file.file_path, "rb") as f:
+                            bot.send_document(call.message.chat.id, f)
             else:
                 bot.send_message(call.message.chat.id, "Информация пока недоступна.")
             db.close()

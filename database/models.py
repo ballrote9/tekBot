@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Text
 from sqlalchemy.orm import relationship
 from database.session import Base
+from database.content_session import ContentBase
 
 class User(Base):
     __tablename__ = 'users'
@@ -34,11 +35,29 @@ class Authorized_users(Base):
     
     user = relationship("User", foreign_keys=[auth_token], uselist=False)
 
-class Content(Base):
-    __tablename__ = 'content'
+class Admin(Base):
+    __tablename__ = 'Admin'
+    
+    id = Column(Integer, primary_key=True)
+    auth_token = Column(String(64), unique=True)
+
+
+class Content(ContentBase):
+    __tablename__ = "content"
 
     id = Column(Integer, primary_key=True)
-    section = Column(String(50), unique=True, nullable=False)  # 'history', 'values'
-    title = Column(String(100), nullable=False)
-    text = Column(Text, nullable=True)
-    file_path = Column(String(255), nullable=True)  # например: 'data/company_info/history.pdf'
+    section = Column(String(50), unique=True)  # Например: history, values
+    title = Column(String(100))
+    text = Column(Text)
+
+    files = relationship("ContentFile", back_populates="content")
+
+
+class ContentFile(ContentBase):
+    __tablename__ = "content_files"
+
+    id = Column(Integer, primary_key=True)
+    content_id = Column(Integer, ForeignKey("content.id"))
+    file_path = Column(String(255))
+
+    content = relationship("Content", back_populates="files")

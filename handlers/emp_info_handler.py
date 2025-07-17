@@ -1,4 +1,8 @@
 from telebot import types
+from database.content_session import ContentSessionLocal
+from database.session import SessionLocal
+from database.models import Admin, Content
+import os
 
 def show_employee_info_menu(bot, message):
     markup = types.InlineKeyboardMarkup(row_width=1)
@@ -32,7 +36,28 @@ def show_company_tours(bot, message):
     bot.send_message(message.chat.id, "🚌 Здесь вы можете узнать о предстоящих экскурсиях по компании.")
 
 def show_virtual_tour(bot, message):
-    bot.send_message(message.chat.id, "🌐 Виртуальная экскурсия — возможность познакомиться с компанией онлайн.")
+    markup = types.InlineKeyboardMarkup(row_width=1)
+
+    buttons = [
+        types.InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")
+    ]
+    db = SessionLocal()
+    if (db.query(Admin).filter(message.from_user.id == Admin.auth_token)):
+        buttons.append(types.InlineKeyboardButton(f"Изменить «Виртуальный тур»", callback_data='edit_section:virtual_tour'))
+
+    markup.add(*buttons)
+    bot.send_message(message.chat.id, "🌐 Виртуальная экскурсия — возможность познакомиться с компанией онлайн.", reply_markup=markup)
+    db = ContentSessionLocal()
+    content = db.query(Content).filter(Content.section == "virtual_tour").first()
+    if content:
+        bot.send_message(message.chat.id, f"💎 {content.title}\n\n{content.text}")
+        for file in content.files:
+            if os.path.exists(file.file_path):
+                with open(file.file_path, "rb") as f:
+                    bot.send_document(message.chat.id, f)
+    else:
+        bot.send_message(message.chat.id, "Информация пока недоступна.")
+    db.close()
 
 
 def show_organizational_structure(bot, message):

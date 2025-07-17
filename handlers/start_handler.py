@@ -1,6 +1,6 @@
 from telebot import types
 import hashlib
-from database.models import User, User_info, Authorized_users
+from database.models import User, User_info, Authorized_users, Admin
 from database.session import SessionLocal
 
 
@@ -13,6 +13,9 @@ def show_main_menu(bot, message):
         types.InlineKeyboardButton("Обратная связь", callback_data="feedback"),
         types.InlineKeyboardButton("Поддержка", callback_data="support")
     ]
+    db = SessionLocal()
+    if (db.query(Admin).filter(message.from_user.id == Admin.auth_token)):
+        buttons.append(types.InlineKeyboardButton("Изменить", callback_data='change_data'))
     markup.add(*buttons)
     bot.send_message(
         message.chat.id,
@@ -112,4 +115,12 @@ def register_start_handler(bot):
     def show_menu(message):
         show_main_menu(bot, message)
         
-    
+    def greetings(message):
+        bot.send_message(
+            message.chat.id,
+            "'Краткое описание основных функций бота'"
+        )
+        bot.send_message(
+            message.chat.id,
+            "Инструкция по дальнейшему взаимодействию (например, \"Чтобы получить информацию о компании, нажмите кнопку 'Информация'\")."
+        )

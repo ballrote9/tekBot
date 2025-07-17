@@ -1,7 +1,7 @@
 import sqlite3
 
 # Подключаемся к БД
-conn = sqlite3.connect('users.db')
+conn = sqlite3.connect('content.db')
 cursor = conn.cursor()
 
 # Получаем список таблиц

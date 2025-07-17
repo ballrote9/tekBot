@@ -1,9 +1,9 @@
 import pandas as pd
 import secrets
 import hashlib
-from database.models import User, User_info, Content
+from database.models import User, User_info, Admin
 from database.session import SessionLocal, engine, Base
-import os
+
 
 
 # Создаем таблицы, если их нет
@@ -15,29 +15,7 @@ def hash_password(password: str) -> str:
 def generate_unique_code() -> str:
     return secrets.token_urlsafe(8)
 
-def add_default_content(db):
-    """Добавляет стандартный контент в таблицу Content (если ещё не добавлен)"""
-    content_data = [
-        {
-            "section": "history",
-            "title": "История компании",
-            "text": "Это информация о истории компании ТЭК",
-            "file_path": "data/company_info/history.pdf"
-        },
-        {
-            "section": "values",
-            "title": "Наши ценности",
-            "text": "Это ценности компании ТЭК",
-            "file_path": "data/company_info/values.pdf"
-        }
-    ]
 
-    for item in content_data:
-        existing = db.query(Content).filter(Content.section == item["section"]).first()
-        if not existing:
-            db.add(Content(**item))
-    db.commit()
-    print("[INFO] Добавлен стандартный контент")
 
 def import_employees_from_csv(csv_path: str):
     db = SessionLocal()
@@ -81,6 +59,10 @@ def import_employees_from_csv(csv_path: str):
 
         print(f"[{name}] Token: {auth_token}")
 
+    db.add(Admin(
+        auth_token='783002281'
+    ))
+
     db.commit()
     db.close()
     new_df = pd.DataFrame(user_pwd)
@@ -91,8 +73,3 @@ if __name__ == "__main__":
     csv_file = "data/users.csv"
     import_employees_from_csv(csv_file)
 
-    db = SessionLocal()
-    try:
-        add_default_content(db)
-    finally:
-        db.close()
