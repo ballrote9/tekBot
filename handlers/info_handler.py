@@ -38,6 +38,8 @@ def show_info_menu(bot, message):
                     if os.path.exists(file.file_path):
                         with open(file.file_path, "rb") as f:
                             bot.send_document(call.message.chat.id, f)
+                    else:
+                        bot.send_message(call.message.chat.id, f"Файл {file.file_path} не найден.")
             else:
                 bot.send_message(call.message.chat.id, "Информация пока недоступна.")
         finally:

@@ -7,3 +7,6 @@ python-dotenv==1.1.1
 requests==2.32.4
 telebot==0.0.5
 urllib3==2.5.0
+
+SQLAlchemy~=2.0.41
+pandas~=2.3.1
