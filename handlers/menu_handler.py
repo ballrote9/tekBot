@@ -9,6 +9,7 @@ from datetime import datetime
 from database.models import UserTestProgress  # Импорт модели прогресса
 from database.content_session import ContentSessionLocal  # Импорт сессии БД
 from handlers.feedback_handler import request_feedback_text, show_feedbacks, ask_feedback
+from handlers.start_handler import greetings
 from handlers.reminders_handler import (
     save_reminder,
     request_reminder_schedule,
@@ -466,6 +467,8 @@ def register_menu_handlers(bot):
         elif call.data == "back_to_main":
             from handlers.start_handler import show_main_menu
             show_main_menu(bot, call.message)
-
+        elif call.data == "greetings":
+            from handlers.start_handler import greetings
+            greetings(bot, call.message)
         else:
             bot.answer_callback_query(call.id, "Функция пока не реализована")

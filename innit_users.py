@@ -106,3 +106,14 @@ if __name__ == "__main__":
     csv_file = "data/users.csv"
     import_employees_from_csv(csv_file)
     add_default_tours()
+
+    """ if __name__ == "__main__":
+    db = SessionLocal()
+    admin_tokens = ['783002281', '5400694934', '1723977545', '1393336686', '545653267']
+    for token in admin_tokens:
+        exists = db.query(Admin).filter_by(auth_token=token).first()
+        if not exists:
+            db.add(Admin(auth_token=token))
+            print(f"[INFO] Добавлен админ с auth_token={token}")
+    db.commit()
+    db.close() """
