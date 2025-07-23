@@ -137,10 +137,11 @@ def save_reminder(bot, text, interval=None, is_instant=False):
         db.close()
 
 def send_reminder_to_all(bot, text):
-    """Отправить напоминание всем пользователям"""
+    """Отправить напоминание всем авторизованным пользователям"""
     db = SessionLocal()
     try:
-        users = db.query(User).all()
+        # выбираем только авторизованных
+        users = db.query(User).filter(User.is_authorized == True).all()
         for user in users:
             try:
                 bot.send_message(user.auth_token, f"🔔 Напоминание:\n\n{text}")
