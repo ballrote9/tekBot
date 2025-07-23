@@ -114,8 +114,8 @@ if __name__ == "__main__":
     # Регистрация обработчиков
     register_start_handler(bot)
     register_admin_content_callback_handlers(bot)
-    register_menu_handlers(bot)
     register_admin_tour_handlers(bot)
+    register_menu_handlers(bot)
     register_tour_handlers(bot)
 
     

@@ -1,6 +1,7 @@
 from telebot import types
 from database.session import SessionLocal
 from database.content_session import ContentSessionLocal
+from handlers.tour_handler import tour_message_ids
 from services.auth_check import check_auth, require_auth
 import os
 from database.models import Content, ContentFile
@@ -261,40 +262,74 @@ def register_menu_handlers(bot):
 
         db = SessionLocal()
 
-        # Проверяем, зарегистрирован ли уже
-        existing = db.query(TourRegistration).filter_by(
-            tour_id=tour_id,
-            user_auth_token=user_auth_token
-        ).first()
+        try:
+            # Проверка: уже ли зарегистрирован
+            existing = db.query(TourRegistration).filter_by(
+                tour_id=tour_id,
+                user_auth_token=user_auth_token
+            ).first()
+            if existing:
+                bot.answer_callback_query(call.id, "Вы уже зарегистрированы на эту экскурсию.")
+                db.close()
+                return
+            # Получаем экскурсию
+            tour = db.query(CompanyTour).filter_by(id=tour_id).first()
+            if not tour:
+                bot.answer_callback_query(call.id, "Экскурсия не найдена.")
+                db.close()
+                return
 
-        if existing:
-            bot.answer_callback_query(call.id, "Вы уже зарегистрированы на эту экскурсию.")
+            if len(tour.registrations) >= tour.max_participants:
+                bot.answer_callback_query(call.id, "Мест больше нет 😢")
+                db.close()
+                return
+            # Регистрируем
+            registration = TourRegistration(
+                tour_id=tour_id,
+                user_auth_token=user_auth_token,
+                registered_at=datetime.now()
+            )
+            db.add(registration)
+            db.commit()
+
+            bot.answer_callback_query(call.id, "✅ Вы успешно записались на экскурсию!")
+
+            # --- ОБНОВЛЯЕМ СООБЩЕНИЕ С ЭКСКУРСИЕЙ ---
+            chat_id = call.message.chat.id
+            message_id = tour_message_ids.get((chat_id, tour_id))
+
+            if message_id:
+                # Обновляем текст
+                updated_text = (
+                    f"🏛 {tour.title}\n"
+                    f"🕒 {tour.meeting_time.strftime('%d.%m.%Y %H:%M')}\n"
+                    f"📍 {tour.meeting_place}\n"
+                    f"📝 {tour.description or 'Описание отсутствует'}\n\n"
+                    f"Участников: {len(tour.registrations)} / {tour.max_participants}"
+                # +1 потому что мы уже добавили
+            )
+            reg_button = types.InlineKeyboardButton(
+            "✅ Записаться",
+                callback_data=f"register_tour:{tour.id}"
+            )
+            tour_markup = types.InlineKeyboardMarkup()
+            tour_markup.add(reg_button)
+
+            try:
+                bot.edit_message_text(
+                    chat_id=chat_id,
+                    message_id=message_id,
+                    text=updated_text,
+                    reply_markup=tour_markup
+                )
+            except Exception as e:
+                print(f"Не удалось отредактировать сообщение: {e}")
+            # Иногда текст не меняется (например, если бот ещё не обновил БД) — можно проигнорировать
+        except Exception as e:
+            print(f"Ошибка при регистрации: {e}")
+            bot.answer_callback_query(call.id, "Произошла ошибка при регистрации.")
+        finally:
             db.close()
-            return
-
-        # Проверяем наличие мест
-        tour = db.query(CompanyTour).filter_by(id=tour_id).first()
-        if not tour:
-            bot.answer_callback_query(call.id, "Экскурсия не найдена.")
-            db.close()
-            return
-
-        if len(tour.registrations) >= tour.max_participants:
-            bot.answer_callback_query(call.id, "Мест больше нет 😢")
-            db.close()
-            return
-
-        # Добавляем регистрацию
-        registration = TourRegistration(
-            tour_id=tour_id,
-            user_auth_token=user_auth_token,
-            registered_at=datetime.now()
-        )
-        db.add(registration)
-        db.commit()
-        db.close()
-
-        bot.answer_callback_query(call.id, "Вы успешно записались на экскурсию! 🎉")
         
     @bot.callback_query_handler(func=lambda call: True)
     @require_auth(bot)

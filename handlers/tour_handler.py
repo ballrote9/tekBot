@@ -3,7 +3,7 @@ from database.models import TourRegistration, CompanyTour, User_info, Admin
 from database.session import SessionLocal
 from datetime import datetime
 from services.auth_check import require_auth
-
+tour_message_ids = {}
 def register_tour_handlers(bot):
     @bot.callback_query_handler(func=lambda call: call.data.startswith("register_tour:"))
     @require_auth(bot)

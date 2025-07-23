@@ -2,6 +2,7 @@ from telebot import types
 from database.content_session import ContentSessionLocal
 from database.session import SessionLocal
 from database.models import Admin, Content, CompanyTour
+from handlers.tour_handler import tour_message_ids
 from services.sections import SECTIONS
 import os
 
@@ -97,6 +98,13 @@ def show_company_tours(bot, message):
                 callback_data="add_tour"
             )
         )
+        buttons.append(
+            types.InlineKeyboardButton(
+                "Удалить экскурсию",
+                callback_data="delete_tour"
+            )
+        )
+
     markup.add(*buttons)
     bot.send_message(message.chat.id, "🚌 Экскурсии по компании — выберите интересующую", reply_markup=markup)
 
@@ -119,7 +127,8 @@ def show_company_tours(bot, message):
         tour_markup = types.InlineKeyboardMarkup()
         tour_markup.add(reg_button)
 
-        bot.send_message(message.chat.id, text, reply_markup=tour_markup)
+        sent = bot.send_message(message.chat.id, text, reply_markup=tour_markup)
+        tour_message_ids[(message.chat.id, tour.id)] = sent.message_id
 
 def show_virtual_tour(bot, message):
     show_section(bot, message, "virtual_tour")
