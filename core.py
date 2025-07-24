@@ -7,6 +7,7 @@ import time
 from datetime import datetime
 from database.session import SessionLocal
 from database.models import Reminder
+from handlers.emp_info_handler import register_emp_info_menu_handler
 from handlers.reminders_handler import (
     send_reminder_to_all, 
     calculate_next_send,
@@ -20,12 +21,13 @@ from handlers.analytics_handler import generate_users_report, generate_feedback_
 from database.models import Admin
 from handlers.tour_handler import register_tour_handlers
 from handlers.admin_tour_handler import register_admin_tour_handlers
+from handlers.info_handler import register_about_company_menu_handler
 # Если у вас нет admin_content_handler, закомментируйте или удалите эту строку
 # from handlers.admin_content_handler import register_admin_content_callback_handlers
 
 load_dotenv()
 API_TOKEN = os.getenv('API_TOKEN')
-print(f"TOKEN: {API_TOKEN}")
+
 
 bot = telebot.TeleBot(API_TOKEN)
 
@@ -113,8 +115,10 @@ def reminder_scheduler(bot_instance):
 if __name__ == "__main__":
     # Регистрация обработчиков
     register_start_handler(bot)
+    register_about_company_menu_handler(bot)
     register_admin_content_callback_handlers(bot)
     register_admin_tour_handlers(bot)
+    register_emp_info_menu_handler(bot)
     register_menu_handlers(bot)
     register_tour_handlers(bot)
 

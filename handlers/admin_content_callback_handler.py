@@ -121,14 +121,10 @@ def register_admin_content_callback_handlers(bot):
             os.makedirs(f"data/{section}", exist_ok=True)
             file_path = f"data/{section}/{file_name}"
             
-            # Скачиваем файл по частям для больших файлов
+            # Скачиваем файл (исправленный способ)
+            downloaded_file = bot.download_file(file_info.file_path)
             with open(file_path, 'wb') as f:
-                downloaded = 0
-                chunk_size = 1024 * 1024  # 1 МБ
-                while downloaded < file_info.file_size:
-                    chunk = bot.download_file(file_info.file_path, offset=downloaded, length=chunk_size)
-                    f.write(chunk)
-                    downloaded += len(chunk)
+                f.write(downloaded_file)
 
             add_file_to_content(section=section, file_path=file_path)
             bot.send_message(message.chat.id, f"✅ Файл {file_name} успешно сохранен ({file_info.file_size//1024} KB)")

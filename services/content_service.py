@@ -2,6 +2,8 @@ from database.content_session import ContentSessionLocal
 from database.models import Content, ContentFile
 import os
 
+from services.auth_check import check_auth
+
 def update_content(section: str, title: str = None, text: str = None):
     db = ContentSessionLocal()
     try:
@@ -67,5 +69,29 @@ def delete_content_file(file_id: int):
         db.rollback()
         print(f"[ERROR] Не удалось удалить файл: {e}")
         return False
+    finally:
+        db.close()
+
+
+def show_content(bot, call, markup):
+    if not check_auth(bot, call.message): 
+        return
+    
+    section = call.data
+    db = ContentSessionLocal()
+    try:
+        content = db.query(Content).filter(Content.section == section).first()
+        if content:
+            bot.send_message(call.message.chat.id, f"📌 {content.title}\n\n{content.text}",
+                             reply_markup = markup)
+
+            for file in content.files:
+                if os.path.exists(file.file_path):
+                    with open(file.file_path, "rb") as f:
+                        bot.send_document(call.message.chat.id, f)
+                else:
+                    bot.send_message(call.message.chat.id, f"Файл {file.file_path} не найден.")
+        else:
+            bot.send_message(call.message.chat.id, "Информация пока недоступна.")
     finally:
         db.close()

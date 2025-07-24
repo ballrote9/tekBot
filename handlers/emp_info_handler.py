@@ -2,7 +2,11 @@ from telebot import types
 from database.content_session import ContentSessionLocal
 from database.session import SessionLocal
 from database.models import Admin, Content, CompanyTour
+from handlers.analytics_handler import show_analytics_menu
+from handlers.reminders_handler import show_reminders_menu
 from handlers.tour_handler import tour_message_ids
+from services.auth_check import require_auth
+from services.content_service import show_content
 from services.sections import SECTIONS
 import os
 
@@ -16,10 +20,10 @@ def show_employee_info_menu(bot, message):
         types.InlineKeyboardButton("Обучающие материалы", callback_data="training_materials"),
         types.InlineKeyboardButton("Экскурсии по компании", callback_data="company_tours"),
         types.InlineKeyboardButton("Виртуальная экскурсия", callback_data="virtual_tour"),
-        types.InlineKeyboardButton("Организационная структура", callback_data="org_structure"),
+        types.InlineKeyboardButton("Организационная структура", callback_data="structure"),
         types.InlineKeyboardButton("Столовая", callback_data="canteen"),
-        types.InlineKeyboardButton("Корпоративные мероприятия", callback_data="corporate_events"),
-        types.InlineKeyboardButton("Оформление документов", callback_data="document_filling"),
+        types.InlineKeyboardButton("Корпоративные мероприятия", callback_data="events"),
+        types.InlineKeyboardButton("Оформление документов", callback_data="documents"),
         types.InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")
     ]
     if is_admin:
@@ -46,7 +50,7 @@ def show_section(bot, message, section_name):
 
     # Проверка, админ ли
     db= SessionLocal()
-    if (db.query(Admin).filter(message.from_user.id == Admin.auth_token)):
+    if (db.query(Admin).filter(message.from_user.id == Admin.auth_token).first()):
         buttons.append(
             types.InlineKeyboardButton(
                 f"Изменить «{title}»",
@@ -130,19 +134,38 @@ def show_company_tours(bot, message):
         sent = bot.send_message(message.chat.id, text, reply_markup=tour_markup)
         tour_message_ids[(message.chat.id, tour.id)] = sent.message_id
 
-def show_virtual_tour(bot, message):
-    show_section(bot, message, "virtual_tour")
 
-def show_organizational_structure(bot, message):
-    show_section(bot, message, "structure")
-
-def show_canteen_info(bot, message):
-    show_section(bot, message, "canteen")
-
-def show_corporate_events(bot, message):
-    show_section(bot, message, "events")
-
-def show_document_filling(bot, message):
-    show_section(bot, message, "documents")
     
 
+def register_emp_info_menu_handler(bot):
+    # Ловит колбеки, если они из списка колбеков кнопок из подменю "Информация о компании"
+    callbacks = ["training_materials", "company_tours", "virtual_tour", "structure",
+                 "canteen",  "events", "documents", "reminders", "analytics_menu", "training"]
+    @bot.callback_query_handler(func=lambda call: call.data in callbacks)
+    @require_auth(bot)
+    def callback_handler(call):
+        markup = types.InlineKeyboardMarkup(row_width=1)
+        buttons = []
+        db = SessionLocal()
+        if (db.query(Admin).filter(call.message.from_user.id == Admin.auth_token).first()):
+            buttons.append(types.InlineKeyboardButton(f"Изменить", callback_data=f'edit_section:{call.data}:training'))
+            buttons.append(types.InlineKeyboardButton(f"Назад", callback_data='training'))
+        markup.add(*buttons)
+        
+        if call.data == "training":
+            show_employee_info_menu(bot, call.message)
+        
+        elif call.data == "training_materials":
+            show_training_menu(bot, call.message)
+        
+        elif call.data == "company_tours":
+            show_company_tours(bot, call.message)
+
+        elif call.data == "reminders":
+            show_reminders_menu(bot, call.message)
+        
+        elif call.data == "analytics_menu":
+            show_analytics_menu(bot, call.message)
+
+        else:
+            show_content(bot, call, markup)
