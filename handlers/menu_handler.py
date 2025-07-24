@@ -23,7 +23,9 @@ def register_menu_handlers(bot):
         elif call.data == "support":
             from handlers.support_handler import show_support
             show_support(bot, call.message)
-
+        elif call.data == "greetings":
+            from handlers.start_handler import greetings
+            greetings(bot, call.message)
         # --- Подменю "Информация о компании" ---
         elif call.data == "history":
             db = ContentSessionLocal()

@@ -2,6 +2,10 @@ from telebot import types
 import hashlib
 from database.models import User, User_info, Authorized_users, Admin
 from database.session import SessionLocal
+from database.content_session import ContentSessionLocal
+from database.models import Admin, Content
+from services.sections import SECTIONS
+
 
 
 def show_main_menu(bot, message):
@@ -24,6 +28,31 @@ def show_main_menu(bot, message):
         reply_markup=markup
     )
 
+def greetings(bot, message):
+    section = 'greetings'
+    db = SessionLocal()
+    markup = None
+    if (db.query(Admin).filter(message.from_user.id == Admin.auth_token)):
+        markup = types.InlineKeyboardMarkup(row_width=1)
+        markup.add(types.InlineKeyboardButton(f"Изменить текст", callback_data='edit_section:greetings:greetings'))
+    db = ContentSessionLocal()
+    try:
+        content = db.query(Content).filter(Content.section == section).first()
+        if content:
+            bot.send_message(message.chat.id, f"📌 {content.text}", reply_markup=markup)
+        elif markup is not None:
+            db.add(Content(
+                section=section,
+                title=SECTIONS[section]['title'],
+                text=SECTIONS[section]['description']
+            ))
+            db.commit()
+            content = db.query(Content).filter(Content.section == section).first()
+            bot.send_message(message.chat.id, f"📌 {content.text}", reply_markup=markup)
+    finally:
+        db.close()
+
+
 # --- Регистрация обработчиков ---
 def register_start_handler(bot):
     # Авторизация Пользователей
@@ -40,7 +69,7 @@ def register_start_handler(bot):
             if hashed_password == auth_user.user.hash_pass:
                 found = True
                 user = auth_user.user
-            else: 
+            else:
                 bot.delete_message(message.chat.id, sent.message_id)
                 bot.delete_message(message.chat.id, message.message_id)
                 sent = bot.send_message(message.chat.id, "Неверный пароль.\r\nПопробуйте еще раз!")
@@ -50,6 +79,7 @@ def register_start_handler(bot):
         # Поиск пользователя среди всех юзеров
         if not found:
             user_entry = db.query(User)
+            print("Bebra")
             for user in user_entry:
                 if hashed_password == user.hash_pass and not user.is_authorized:
                     found = True
@@ -78,11 +108,13 @@ def register_start_handler(bot):
             bot.delete_message(message.chat.id, sent.message_id)
             bot.delete_message(message.chat.id, message.message_id)
             bot.send_message(message.chat.id, f"Вы успешно авторизованы, {user_info.full_name}!")
+            greetings(message)
 
         else:
             bot.delete_message(message.chat.id, sent.message_id)
             bot.delete_message(message.chat.id, message.message_id)
             bot.send_message(message.chat.id, f"Вы успешно авторизованы, {user.user_info.full_name}!")
+            greetings(message)
         db.close()
 
     
@@ -114,13 +146,7 @@ def register_start_handler(bot):
     @bot.message_handler(commands=["menu"])
     def show_menu(message):
         show_main_menu(bot, message)
-        
-    def greetings(message):
-        bot.send_message(
-            message.chat.id,
-            "'Краткое описание основных функций бота'"
-        )
-        bot.send_message(
-            message.chat.id,
-            "Инструкция по дальнейшему взаимодействию (например, \"Чтобы получить информацию о компании, нажмите кнопку 'Информация'\")."
-        )
+    
+    @bot.message_handler(commands=["greetings"]) 
+    def show_greeting(message):
+        greetings(bot, message)

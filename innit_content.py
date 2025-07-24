@@ -1,17 +1,9 @@
-# init_content_db.py
-
-"""
-Скрипт для инициализации базы данных контента:
-- Создание таблиц content и content_files
-- Добавление начальных записей (если их нет)
-"""
-
 from database.models import Content, ContentFile
 from database.content_session import ContentSessionLocal, ContentBase, content_engine
 
 
+    # Создаёт все таблицы в БД, если они ещё не созданы
 def create_tables():
-    """Создаёт все таблицы в БД, если они ещё не созданы"""
     try:
         ContentBase.metadata.create_all(bind=content_engine)
         print("[OK] Таблицы успешно созданы или уже существуют")
@@ -20,8 +12,8 @@ def create_tables():
         raise
 
 
+    # Добавляет стандартные разделы и опциональные файлы
 def add_default_content(db: ContentSessionLocal):
-    """Добавляет стандартные разделы и опциональные файлы"""
     content_data = [
         {
             "section": "history",
@@ -65,7 +57,9 @@ def add_default_content(db: ContentSessionLocal):
 if __name__ == "__main__":
     create_tables()
     db = ContentSessionLocal()
-    try:
+    # Eсли есть какое-нибудь наполнение, можно добавить
+    # через функцию add_default_content(db)
+    """ try:
         add_default_content(db)
     finally:
-        db.close()
+        db.close() """
