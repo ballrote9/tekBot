@@ -23,6 +23,7 @@ from handlers.analytics_handler import (
     generate_content_report,
     create_excel_file  # Импортируем функцию создания Excel
 )
+from services.content_service import show_content
 
 
 
@@ -348,7 +349,7 @@ def register_menu_handlers(bot):
         finally:
             db.close()
         
-        # МЕНЮ /menu основное
+
         # информация для сотрудников
         # FAQ
         if call.data == "faq":
@@ -364,6 +365,17 @@ def register_menu_handlers(bot):
             show_support(bot, call.message)
         # Конец меню
         
+        elif call.data == "contact_admin":
+            markup = types.InlineKeyboardMarkup(row_width=1)
+
+            buttons = [
+                types.InlineKeyboardButton("Изменить", callback_data="edit_section:contact_admin:support"),
+                types.InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")
+            ]
+
+            markup.add(*buttons)
+            show_content(bot, call, markup)
+
         elif call.data == "training_tests":
             from handlers.tests_handler import show_tests_menu
             show_tests_menu(bot, call.message, call.from_user.id)

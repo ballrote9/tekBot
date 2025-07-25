@@ -4,8 +4,7 @@ def show_support(bot, message):
     markup = types.InlineKeyboardMarkup(row_width=1)
 
     buttons = [
-        types.InlineKeyboardButton("Связаться с HR", callback_data="contact_hr"),
-        types.InlineKeyboardButton("Проблемы с ботом?", callback_data="help_bot"),
+        types.InlineKeyboardButton("Связаться с администраторами ", callback_data="contact_admin"),
         types.InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")
     ]
 
