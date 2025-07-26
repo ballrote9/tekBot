@@ -1,7 +1,8 @@
 from telebot import types
-from handlers.tour_handler import tour_message_ids
+
+from database.session import SessionLocal
 from services.auth_check import require_auth
-from database.models import Content, ContentFile, UserTestProgress 
+from database.models import Content, ContentFile, UserTestProgress, CompanyTour, User_info, TourRegistration, Admin
 from database.content_session import ContentSessionLocal  # Импорт сессии БД
 import os
 from datetime import datetime
@@ -24,7 +25,7 @@ from handlers.analytics_handler import (
     create_excel_file  # Импортируем функцию создания Excel
 )
 from services.content_service import show_content
-
+from services.tour_service import tour_message_ids
 
 
 def register_menu_handlers(bot):
@@ -243,84 +244,96 @@ def register_menu_handlers(bot):
     @bot.callback_query_handler(func=lambda call: call.data.startswith("register_tour:"))
     @require_auth(bot)
     def handle_register_tour(call):
-        from database.session import SessionLocal
-        from database.models import TourRegistration, CompanyTour
-        from datetime import datetime
-
         tour_id = int(call.data.split(":")[1])
-        user_auth_token = str(call.from_user.id)
+        user_token = str(call.from_user.id)
 
         db = SessionLocal()
-
         try:
-            # Проверка: уже ли зарегистрирован
-            existing = db.query(TourRegistration).filter_by(
-                tour_id=tour_id,
-                user_auth_token=user_auth_token
-            ).first()
-            if existing:
-                bot.answer_callback_query(call.id, "Вы уже зарегистрированы на эту экскурсию.")
-                db.close()
-                return
-            # Получаем экскурсию
-            tour = db.query(CompanyTour).filter_by(id=tour_id).first()
+            tour = db.query(CompanyTour).get(tour_id)
+
             if not tour:
-                bot.answer_callback_query(call.id, "Экскурсия не найдена.")
-                db.close()
+                bot.answer_callback_query(call.id, "Экскурсия не найдена")
                 return
 
             if len(tour.registrations) >= tour.max_participants:
-                bot.answer_callback_query(call.id, "Мест больше нет 😢")
-                db.close()
+                bot.answer_callback_query(call.id, "Мест больше нет")
                 return
-            # Регистрируем
+
+            existing = db.query(TourRegistration).filter(
+                TourRegistration.tour_id == tour_id,
+                TourRegistration.user_auth_token == user_token
+            ).first()
+
+            if existing:
+                bot.answer_callback_query(call.id, "Вы уже записаны")
+                return
+
             registration = TourRegistration(
                 tour_id=tour_id,
-                user_auth_token=user_auth_token,
-                registered_at=datetime.now()
+                user_auth_token=user_token
             )
             db.add(registration)
             db.commit()
+            db.refresh(tour)
 
-            bot.answer_callback_query(call.id, "✅ Вы успешно записались на экскурсию!")
+            bot.answer_callback_query(call.id, "Вы записались!")
+            bot.send_message(
+                call.message.chat.id,
+                f"✅ Вы записаны на '{tour.title}' в {tour.meeting_time.strftime('%d.%m.%Y %H:%M')}"
+            )
 
-            # --- ОБНОВЛЯЕМ СООБЩЕНИЕ С ЭКСКУРСИЕЙ ---
+            # ✅ Обновление счётчика
+            count = db.query(TourRegistration).filter(
+                TourRegistration.tour_id == tour_id
+            ).count()
+
             chat_id = call.message.chat.id
             message_id = tour_message_ids.get((chat_id, tour_id))
-
             if message_id:
-                # Обновляем текст
                 updated_text = (
                     f"🏛 {tour.title}\n"
                     f"🕒 {tour.meeting_time.strftime('%d.%m.%Y %H:%M')}\n"
                     f"📍 {tour.meeting_place}\n"
                     f"📝 {tour.description or 'Описание отсутствует'}\n\n"
-                    f"Участников: {len(tour.registrations)} / {tour.max_participants}"
-                # +1 потому что мы уже добавили
-            )
-            reg_button = types.InlineKeyboardButton(
-            "✅ Записаться",
-                callback_data=f"register_tour:{tour.id}"
-            )
-            tour_markup = types.InlineKeyboardMarkup()
-            tour_markup.add(reg_button)
-
-            try:
-                bot.edit_message_text(
-                    chat_id=chat_id,
-                    message_id=message_id,
-                    text=updated_text,
-                    reply_markup=tour_markup
+                    f"Участников: {count} / {tour.max_participants}"
                 )
-            except Exception as e:
-                print(f"Не удалось отредактировать сообщение: {e}")
-            # Иногда текст не меняется (например, если бот ещё не обновил БД) — можно проигнорировать
+
+                reg_button = types.InlineKeyboardButton(
+                    "✅ Записаться",
+                    callback_data=f"register_tour:{tour.id}"
+                )
+                tour_markup = types.InlineKeyboardMarkup()
+                tour_markup.add(reg_button)
+
+                try:
+                    bot.edit_message_text(
+                        chat_id=chat_id,
+                        message_id=message_id,
+                        text=updated_text,
+                        reply_markup=tour_markup
+                    )
+                except Exception as e:
+                    print(f"[ERROR] Не удалось обновить сообщение: {e}")
+
+
+            admins = db.query(Admin).all()
+            for admin in admins:
+                try:
+                    bot.send_message(
+                        admin.auth_token,
+                        f"🔔 Новая запись на экскурсию:\n"
+                        f"🏛 {tour.title}\n"
+                        f"🕒 {tour.meeting_time.strftime('%d.%m.%Y %H:%M')}"
+                    )
+                except Exception as e:
+                    print(f"[WARN] Не удалось отправить уведомление админу {admin.auth_token}: {e}")
+
         except Exception as e:
-            print(f"Ошибка при регистрации: {e}")
-            bot.answer_callback_query(call.id, "Произошла ошибка при регистрации.")
+            print(f"[REG ERROR] {e}")
+            bot.answer_callback_query(call.id, "❌ Ошибка при записи")
         finally:
             db.close()
-        
+
     @bot.callback_query_handler(func=lambda call: True)
     @require_auth(bot)
     def handle_callback(call):     

@@ -4,14 +4,15 @@ from database.session import SessionLocal
 from database.models import Admin, Content, CompanyTour
 from handlers.analytics_handler import show_analytics_menu
 from handlers.reminders_handler import show_reminders_menu
-from handlers.tour_handler import tour_message_ids
 from services.auth_check import require_auth
 from services.content_service import show_content
 from services.sections import SECTIONS
 import os
+from sqlalchemy.orm import joinedload
+
+from services.tour_service import tour_message_ids
 
 
-    
 def show_section(bot, message, section_name):
     section_info = SECTIONS.get(section_name, {})
     title = section_info.get("title", section_name.capitalize())
@@ -143,24 +144,24 @@ def register_emp_info_menu_handler(bot):
 
             if not tours:
                 bot.send_message(call.message.chat.id, "Пока нет активных экскурсий")
-                return
-            for tour in tours:
-                text = f"🏛 {tour.title}\n" \
-                    f"🕒 {tour.meeting_time.strftime('%d.%m.%Y %H:%M')}\n" \
-                    f"📍 {tour.meeting_place}\n" \
-                    f"📝 {tour.description or 'Описание отсутствует'}\n\n" \
-                    f"Участников: {len(tour.registrations)} / {tour.max_participants}"
+            else:
+                for tour in tours:
+                    text = (
+                        f"🏛 {tour.title}\n"
+                        f"🕒 {tour.meeting_time.strftime('%d.%m.%Y %H:%M')}\n"
+                        f"📍 {tour.meeting_place}\n"
+                        f"📝 {tour.description or 'Описание отсутствует'}\n\n"
+                        f"Участников: {len(tour.registrations)} / {tour.max_participants}"
+                    )
+                    reg_button = types.InlineKeyboardButton(
+                        "✅ Записаться",
+                        callback_data=f"register_tour:{tour.id}"
+                    )
+                    tour_markup = types.InlineKeyboardMarkup()
+                    tour_markup.add(reg_button)
 
-                reg_button = types.InlineKeyboardButton(
-                    "✅ Записаться",
-                    callback_data=f"register_tour:{tour.id}"
-                )
-                tour_markup = types.InlineKeyboardMarkup()
-                tour_markup.add(reg_button)
-
-                sent = bot.send_message(call.message.chat.id, text, reply_markup=tour_markup)
-                tour_message_ids[(call.message.chat.id, tour.id)] = sent.message_id
-
+                    sent = bot.send_message(call.message.chat.id, text, reply_markup=tour_markup)
+                    tour_message_ids[(call.message.chat.id, tour.id)] = sent.message_id
         elif call.data == "reminders":
             show_reminders_menu(bot, call.message)
         
