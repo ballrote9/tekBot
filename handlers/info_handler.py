@@ -17,7 +17,7 @@ def register_about_company_menu_handler(bot):
         markup = types.InlineKeyboardMarkup(row_width=1)
         buttons = []
         db = SessionLocal()
-        if (db.query(Admin).filter(call.message.from_user.id == Admin.auth_token).first()):
+        if (db.query(Admin).filter(call.from_user.id == Admin.auth_token).first()):
             buttons.append(types.InlineKeyboardButton(f"Изменить", callback_data=f'edit_section:{call.data}:training'))
             buttons.append(types.InlineKeyboardButton(f"Назад", callback_data='training'))
         markup.add(*buttons)

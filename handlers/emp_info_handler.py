@@ -89,13 +89,13 @@ def register_emp_info_menu_handler(bot):
             is_admin = db.query(Admin).filter(Admin.auth_token == str(user_id)).first() is not None
             db.close()
             buttons = [
-                types.InlineKeyboardButton("Обучающие материалы", callback_data="training_materials"),
-                types.InlineKeyboardButton("Экскурсии по компании", callback_data="company_tours"),
-                types.InlineKeyboardButton("Виртуальная экскурсия", callback_data="virtual_tour"),
-                types.InlineKeyboardButton("Организационная структура", callback_data="structure"),
-                types.InlineKeyboardButton("Столовая", callback_data="canteen"),
-                types.InlineKeyboardButton("Корпоративные мероприятия", callback_data="events"),
-                types.InlineKeyboardButton("Оформление документов", callback_data="documents"),
+                types.InlineKeyboardButton("📘 Обучающие материалы", callback_data="training_materials"),
+                types.InlineKeyboardButton("🏛️ Экскурсии по компании", callback_data="company_tours"),
+                types.InlineKeyboardButton("🖥️ Виртуальная экскурсия", callback_data="virtual_tour"),
+                types.InlineKeyboardButton("🗂️ Организационная структура", callback_data="structure"),
+                types.InlineKeyboardButton("🍽️ Столовая", callback_data="canteen"),
+                types.InlineKeyboardButton("🎉 Корпоративные мероприятия", callback_data="events"),
+                types.InlineKeyboardButton("📝 Оформление документов", callback_data="documents"),
                 types.InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")
             ]
             print(f"[DEBUG] show_employee_info_menu: user_id={call.from_user.id}, is_admin={is_admin}")
@@ -117,7 +117,7 @@ def register_emp_info_menu_handler(bot):
         elif call.data == "company_tours":
             markup = types.InlineKeyboardMarkup(row_width=1)
             buttons = [
-                types.InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")
+                types.InlineKeyboardButton("⬅ Назад", callback_data="training")
             ]
             db = SessionLocal()
             user_id = str(call.from_user.id)
@@ -125,13 +125,13 @@ def register_emp_info_menu_handler(bot):
             if is_admin is not None:
                 buttons.append(
                     types.InlineKeyboardButton(
-                        "Добавить экскурсию",
+                        "✔️Добавить экскурсию",
                         callback_data="add_tour"
                     )
                 )
                 buttons.append(
                     types.InlineKeyboardButton(
-                        "Удалить экскурсию",
+                        "❌Удалить экскурсию",
                         callback_data="delete_tour"
                     )
                 )

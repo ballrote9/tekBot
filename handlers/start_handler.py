@@ -10,11 +10,11 @@ from services.auth_check import check_auth, require_auth
 def show_main_menu(bot, message):
     markup = types.InlineKeyboardMarkup(row_width=1)
     buttons = [
-        types.InlineKeyboardButton("Информация о компании", callback_data="info"),
-        types.InlineKeyboardButton("Информация для сотрудников", callback_data="training"),
-        types.InlineKeyboardButton("FAQ", callback_data="faq"),
-        types.InlineKeyboardButton("Обратная связь", callback_data="feedback"),
-        types.InlineKeyboardButton("Поддержка", callback_data="support")
+        types.InlineKeyboardButton("🏢 Информация о компании", callback_data="info"),
+        types.InlineKeyboardButton("📚 Информация для сотрудников", callback_data="training"),
+        types.InlineKeyboardButton("❓ FAQ", callback_data="faq"),
+        types.InlineKeyboardButton("✉️ Обратная связь", callback_data="feedback"),
+        types.InlineKeyboardButton("🛠️ Поддержка", callback_data="support")
     ]
     markup.add(*buttons)
     bot.send_message(

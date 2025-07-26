@@ -62,7 +62,10 @@ def register_admin_content_callback_handlers(bot):
             btn = types.InlineKeyboardButton(f"🗑 {os.path.basename(file.file_path)}", callback_data=f"delete_file:{file.id}")
             markup.add(btn)
 
-        markup.add(types.InlineKeyboardButton("⬅ Назад", callback_data=f"edit_section:{section}"))
+        markup.add(types.InlineKeyboardButton(
+            "⬅ Назад",
+            callback_data=f"edit_section:{section}:admin_{section}"
+        ))
         bot.send_message(call.message.chat.id, f"📎 Файлы в разделе «{info['title']}»:", reply_markup=markup)
 
     # --- Изменить заголовок ---
