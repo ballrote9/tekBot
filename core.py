@@ -114,13 +114,13 @@ def reminder_scheduler(bot_instance):
 
 if __name__ == "__main__":
     # Регистрация обработчиков
-    register_start_handler(bot)
-    register_about_company_menu_handler(bot)
+    register_start_handler(bot)                 #старт
+    register_about_company_menu_handler(bot)    #menu about comvpany
     register_admin_content_callback_handlers(bot)
-    register_admin_tour_handlers(bot)
     register_emp_info_menu_handler(bot)
-    register_menu_handlers(bot)
+    register_admin_tour_handlers(bot)
     register_tour_handlers(bot)
+    register_menu_handlers(bot)
 
     
     # Если у вас есть этот обработчик, раскомментируйте
