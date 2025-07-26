@@ -74,7 +74,8 @@ def delete_content_file(file_id: int):
 
 
 def show_content(bot, call, markup):
-    if not check_auth(bot, call.message): 
+    
+    if not check_auth(bot, call): 
         return
     
     section = call.data

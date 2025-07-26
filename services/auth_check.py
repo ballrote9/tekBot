@@ -1,44 +1,70 @@
 from database.models import Authorized_users, Admin
 from database.session import SessionLocal
 
-    # Проверка является ли юзер админом или авторизованным пользователем 
 def is_user_authorized(user_id: int):
     db = SessionLocal()
-    uid = str(user_id)
-    is_authorized = (
-        db.query(Authorized_users).filter(Authorized_users.auth_token == uid).first() or
-        db.query(Admin).filter(Admin.auth_token == uid).first()
-    )
-    db.close()
-    print()
-    return is_authorized is not None  # Возвращаем boolean, а не объект
+    try:
+        uid = str(user_id)  # Конвертируем в строку для поиска
+        is_authorized = (
+            db.query(Authorized_users).filter(Authorized_users.auth_token == uid).first() is not None or
+            db.query(Admin).filter(Admin.auth_token == uid).first() is not None
+        )
+        print(f"[AUTH DEBUG] User id: {uid}, Authorized: {is_authorized}")
+        return is_authorized
+    except Exception as e:
+        print(f"[AUTH ERROR] {e}")
+        return False
+    finally:
+        db.close()
 
-    # Функция для проверки авторизации
-def check_auth(bot, message):
-    # Более надежный способ получения user_id
+def get_user_id_from_message(message):
+    """Получает правильный user_id из сообщения"""
+    # Для callback query
     if hasattr(message, 'from_user') and message.from_user:
-        user_id = message.from_user.id
-    elif hasattr(message, 'message') and hasattr(message.message, 'from_user'):
-        user_id = message.message.from_user.id
-    else:
+        return message.from_user.id
+    
+    # Для вложенного сообщения в callback
+    if hasattr(message, 'message') and hasattr(message.message, 'from_user'):
+        return message.message.from_user.id
+    
+    # Для edited_message и других случаев
+    if hasattr(message, 'edited_message') and hasattr(message.edited_message, 'from_user'):
+        return message.edited_message.from_user.id
+    
+    return None
+
+def check_auth(bot, message):
+    user_id = get_user_id_from_message(message)
+    
+    if user_id is None:
+        print("[AUTH ERROR] Cannot determine user ID")
         bot.reply_to(message, "⛔ Ошибка авторизации.")
         return False
+    
+    print(f"[AUTH] Checking user ID: {user_id}")
     
     if not is_user_authorized(user_id):
         bot.reply_to(message, "⛔ Доступ запрещен.")
         return False
     return True
 
-    # Декоратор для оборачивания функций, требующих прав (юзера или админа)
 def require_auth(bot):
     def decorator(func):
         def wrapper(message, *args, **kwargs):
-            # Проверяем, является ли message callback-запросом или обычным сообщением
-            user_id = message.from_user.id if hasattr(message, 'from_user') else message.message.from_user.id
+            user_id = get_user_id_from_message(message)
+            
+            if user_id is None:
+                print("[AUTH DECORATOR] Cannot determine user ID")
+                if hasattr(message, 'id'):  # callback query
+                    bot.answer_callback_query(message.id, "⛔ Ошибка авторизации")
+                else:
+                    bot.reply_to(message, "⛔ Ошибка авторизации.")
+                return
+            
+            print(f"[AUTH DECORATOR] Checking user ID: {user_id}")
             
             if not is_user_authorized(user_id):
-                # Отправляем сообщение вместо ответа на callback
-                if hasattr(message, 'message'):  # Это callback
+                if hasattr(message, 'id'):  # Это callback query
                     bot.answer_callback_query(message.id, "⛔ Доступ запрещен")
                 else:  # Это обычное сообщение
                     bot.reply_to(message, "⛔ Доступ запрещен. Пожалуйста, авторизуйтесь через /start")

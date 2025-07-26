@@ -10,33 +10,7 @@ from services.content_service import show_content
 from services.sections import SECTIONS
 import os
 
-def show_employee_info_menu(bot, message):
-    markup = types.InlineKeyboardMarkup(row_width=1)
-    user_id = message.from_user.id
-    db = SessionLocal()
-    is_admin = db.query(Admin).filter(Admin.auth_token == str(user_id)).first() is not None
-    db.close()
-    buttons = [
-        types.InlineKeyboardButton("Обучающие материалы", callback_data="training_materials"),
-        types.InlineKeyboardButton("Экскурсии по компании", callback_data="company_tours"),
-        types.InlineKeyboardButton("Виртуальная экскурсия", callback_data="virtual_tour"),
-        types.InlineKeyboardButton("Организационная структура", callback_data="structure"),
-        types.InlineKeyboardButton("Столовая", callback_data="canteen"),
-        types.InlineKeyboardButton("Корпоративные мероприятия", callback_data="events"),
-        types.InlineKeyboardButton("Оформление документов", callback_data="documents"),
-        types.InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")
-    ]
-    if is_admin:
-        buttons.append(types.InlineKeyboardButton("⏰ Напоминания", callback_data="reminders"))
-        buttons.append(types.InlineKeyboardButton("📊 Отчетность", callback_data="analytics_menu"))  
-    markup.add(*buttons)
 
-    bot.send_message(
-        message.chat.id,
-        "🎓 Информация для сотрудников:\n"
-        "Выберите нужный раздел.",
-        reply_markup=markup
-    )
     
 def show_section(bot, message, section_name):
     section_info = SECTIONS.get(section_name, {})
@@ -147,13 +121,39 @@ def register_emp_info_menu_handler(bot):
         markup = types.InlineKeyboardMarkup(row_width=1)
         buttons = []
         db = SessionLocal()
-        if (db.query(Admin).filter(call.message.from_user.id == Admin.auth_token).first()):
+        if (db.query(Admin).filter(call.from_user.id == Admin.auth_token).first()):
             buttons.append(types.InlineKeyboardButton(f"Изменить", callback_data=f'edit_section:{call.data}:training'))
             buttons.append(types.InlineKeyboardButton(f"Назад", callback_data='training'))
         markup.add(*buttons)
         
         if call.data == "training":
-            show_employee_info_menu(bot, call.message)
+            markup = types.InlineKeyboardMarkup(row_width=1)
+            user_id = call.from_user.id
+            db = SessionLocal()
+            is_admin = db.query(Admin).filter(Admin.auth_token == str(user_id)).first() is not None
+            db.close()
+            buttons = [
+                types.InlineKeyboardButton("Обучающие материалы", callback_data="training_materials"),
+                types.InlineKeyboardButton("Экскурсии по компании", callback_data="company_tours"),
+                types.InlineKeyboardButton("Виртуальная экскурсия", callback_data="virtual_tour"),
+                types.InlineKeyboardButton("Организационная структура", callback_data="structure"),
+                types.InlineKeyboardButton("Столовая", callback_data="canteen"),
+                types.InlineKeyboardButton("Корпоративные мероприятия", callback_data="events"),
+                types.InlineKeyboardButton("Оформление документов", callback_data="documents"),
+                types.InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")
+            ]
+            print(f"[DEBUG] show_employee_info_menu: user_id={call.from_user.id}, is_admin={is_admin}")
+            if is_admin:
+                buttons.append(types.InlineKeyboardButton("⏰ Напоминания", callback_data="reminders"))
+                buttons.append(types.InlineKeyboardButton("📊 Отчетность", callback_data="analytics_menu"))  
+            markup.add(*buttons)
+
+            bot.send_message(
+                call.message.chat.id,
+                "🎓 Информация для сотрудников:\n"
+                "Выберите нужный раздел.",
+                reply_markup=markup
+            )
         
         elif call.data == "training_materials":
             show_training_menu(bot, call.message)

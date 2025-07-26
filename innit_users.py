@@ -87,7 +87,7 @@ def import_employees_from_csv(csv_path: str):
         print(f"[{name}] Token: {auth_token}")
 
     # ✅ Добавляем админов (по TГ ID)
-    admin_tokens = ['783002281', '5400694934', '1723977545', '1393336686', "545653267"]
+    admin_tokens = ['783002281', '5400694934', '1393336686']
     for token in admin_tokens:
         exists = db.query(Admin).filter_by(auth_token=token).first()
         if not exists:
@@ -107,6 +107,7 @@ if __name__ == "__main__":
     import_employees_from_csv(csv_file)
     add_default_tours()
 
+# Это чтобы расширить список администраторов
     """ if __name__ == "__main__":
     db = SessionLocal()
     admin_tokens = ['783002281', '5400694934', '1723977545', '1393336686', '545653267']

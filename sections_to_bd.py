@@ -1,4 +1,3 @@
-# init_content.py
 from database.content_session import ContentSessionLocal
 from database.models import Content
 from services.sections import SECTIONS
