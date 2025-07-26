@@ -1,16 +1,11 @@
 from telebot import types
-from database.session import SessionLocal
-from database.content_session import ContentSessionLocal
 from handlers.tour_handler import tour_message_ids
-from services.auth_check import check_auth, require_auth
-import os
-from database.models import Content, ContentFile
-from sqlalchemy import or_, and_
-from datetime import datetime
-from database.models import UserTestProgress  # Импорт модели прогресса
+from services.auth_check import require_auth
+from database.models import Content, ContentFile, UserTestProgress 
 from database.content_session import ContentSessionLocal  # Импорт сессии БД
+import os
+from datetime import datetime
 from handlers.feedback_handler import request_feedback_text, show_feedbacks, ask_feedback
-from handlers.start_handler import greetings
 from handlers.reminders_handler import (
     save_reminder,
     request_reminder_schedule,
@@ -19,7 +14,6 @@ from handlers.reminders_handler import (
     show_scheduled_reminders,
     request_reminder_to_delete
 )
-from handlers.analytics_handler import show_analytics_menu, generate_users_report, generate_feedback_report
 from handlers.analytics_handler import (
     show_analytics_menu, 
     generate_users_report, 
@@ -29,7 +23,8 @@ from handlers.analytics_handler import (
     generate_content_report,
     create_excel_file  # Импортируем функцию создания Excel
 )
-from database.models import User  # Импортируем модель User
+from services.content_service import show_content
+
 
 
 def register_menu_handlers(bot):
@@ -130,11 +125,6 @@ def register_menu_handlers(bot):
             excel_file, filename = create_excel_file(excel_data, "content_report.xlsx")
             bot.send_document(call.message.chat.id, excel_file, visible_file_name=filename)
             
-    @bot.callback_query_handler(func=lambda call: call.data == "reminders")
-    @require_auth(bot)
-    def handle_reminders(call):
-        show_reminders_menu(bot, call.message)
-
     @bot.callback_query_handler(func=lambda call: call.data == "send_reminder")
     @require_auth(bot)
     def handle_send_reminder(call):
@@ -254,7 +244,7 @@ def register_menu_handlers(bot):
     @require_auth(bot)
     def handle_register_tour(call):
         from database.session import SessionLocal
-        from database.models import TourRegistration, CompanyTour, User_info
+        from database.models import TourRegistration, CompanyTour
         from datetime import datetime
 
         tour_id = int(call.data.split(":")[1])
@@ -358,63 +348,37 @@ def register_menu_handlers(bot):
             pass
         finally:
             db.close()
-        #print(f"Обработка callback: {call.data}")  # Добавьте эту строку
-        if call.data == "info":
-            from handlers.info_handler import show_info_menu
-            show_info_menu(bot, call.message)
-        elif call.data == "training":
-            from handlers.emp_info_handler import show_employee_info_menu
-            show_employee_info_menu(bot, call.message)
-        elif call.data == "faq":
+        
+
+        # информация для сотрудников
+        # FAQ
+        if call.data == "faq":
             from handlers.faq_handler import show_faq_menu
             show_faq_menu(bot, call.message)
+        # Обратная связь
         elif call.data == "feedback":
             from handlers.feedback_handler import ask_feedback
             ask_feedback(bot, call.message)
+        # Поддержка
         elif call.data == "support":
             from handlers.support_handler import show_support
             show_support(bot, call.message)
+        # Конец меню
+        
+        elif call.data == "contact_admin":
+            markup = types.InlineKeyboardMarkup(row_width=1)
 
-        # --- Подменю "Информация о компании" ---
-        elif call.data == "history":
-            db = ContentSessionLocal()
-            content = db.query(Content).filter(Content.section == "history").first()
-            if content:
-                bot.send_message(call.message.chat.id, f"📌 {content.title}\n\n{content.text}")
-                for file in content.files:
-                    if os.path.exists(file.file_path):
-                        with open(file.file_path, "rb") as f:
-                            bot.send_document(call.message.chat.id, f)
-            else:
-                bot.send_message(call.message.chat.id, "Информация пока недоступна.")
-            db.close()
-            
+            buttons = [
+                types.InlineKeyboardButton("Изменить", callback_data="edit_section:contact_admin:support"),
+                types.InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")
+            ]
+
+            markup.add(*buttons)
+            show_content(bot, call, markup)
+
         elif call.data == "training_tests":
             from handlers.tests_handler import show_tests_menu
             show_tests_menu(bot, call.message, call.from_user.id)
-    
-        elif call.data == "values":
-            db = ContentSessionLocal()
-            content = db.query(Content).filter(Content.section == "values").first()
-            if content:
-                bot.send_message(call.message.chat.id, f"💎 {content.title}\n\n{content.text}")
-                for file in content.files:
-                    if os.path.exists(file.file_path):
-                        with open(file.file_path, "rb") as f:
-                            bot.send_document(call.message.chat.id, f)
-            else:
-                bot.send_message(call.message.chat.id, "Информация пока недоступна.")
-            db.close()
-
-
-
-        elif call.data == "training":
-            from handlers.emp_info_handler import show_employee_info_menu
-            show_employee_info_menu(bot, call.message)
-            
-        elif call.data == "training_materials":
-            from handlers.training_materials import show_training_menu
-            show_training_menu(bot, call.message)
             
         elif call.data == "training_categories":
             from handlers.training_materials import show_training_categories
@@ -433,34 +397,6 @@ def register_menu_handlers(bot):
                 from handlers.training_materials import show_training_by_section
                 show_training_by_section(bot, call, section)
             
-        elif call.data == "company_tours":
-            from handlers.emp_info_handler import show_company_tours
-            show_company_tours(bot, call.message)
-
-
-        elif call.data == "virtual_tour":
-            from handlers.emp_info_handler import show_virtual_tour
-            show_virtual_tour(bot, call.message)
-
-        elif call.data == "org_structure":
-            from handlers.emp_info_handler import show_organizational_structure
-            show_organizational_structure(bot, call.message)
-
-        elif call.data == "canteen":
-            from handlers.emp_info_handler import show_canteen_info
-            show_canteen_info(bot, call.message)
-
-        elif call.data == "corporate_events":
-            from handlers.emp_info_handler import show_corporate_events
-            show_corporate_events(bot, call.message)
-
-        elif call.data == "document_filling":
-            from handlers.emp_info_handler import show_document_filling
-            show_document_filling(bot, call.message)
-            
-                # FAQ обработчики
-
-
         elif call.data == "faq_list":
             from handlers.faq_handler import show_question_list
             show_question_list(bot, call)
@@ -498,12 +434,13 @@ def register_menu_handlers(bot):
             question_id = int(call.data.split(":")[1])
             delete_question_handler(bot, call, question_id)
 
-        # --- Кнопка "Назад" ---
         elif call.data == "back_to_main":
             from handlers.start_handler import show_main_menu
             show_main_menu(bot, call.message)
+        
         elif call.data == "greetings":
             from handlers.start_handler import greetings
             greetings(bot, call.message)
+        
         else:
             bot.answer_callback_query(call.id, "Функция пока не реализована")

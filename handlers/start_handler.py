@@ -1,24 +1,21 @@
 from telebot import types
 import hashlib
-from database.models import User, User_info, Authorized_users, Admin
+from database.models import User, User_info, Authorized_users, Admin, Content
 from database.session import SessionLocal
 from database.content_session import ContentSessionLocal
-from database.models import Admin, Content
 from services.sections import SECTIONS
 from services.auth_check import check_auth, require_auth
 
+    # Функция вывода основного меню 
 def show_main_menu(bot, message):
     markup = types.InlineKeyboardMarkup(row_width=1)
     buttons = [
-        types.InlineKeyboardButton("Информация о компании", callback_data="info"),
-        types.InlineKeyboardButton("Информация для сотрудников", callback_data="training"),
-        types.InlineKeyboardButton("FAQ", callback_data="faq"),
-        types.InlineKeyboardButton("Обратная связь", callback_data="feedback"),
-        types.InlineKeyboardButton("Поддержка", callback_data="support")
+        types.InlineKeyboardButton("🏢 Информация о компании", callback_data="info"),
+        types.InlineKeyboardButton("📚 Информация для сотрудников", callback_data="training"),
+        types.InlineKeyboardButton("❓ FAQ", callback_data="faq"),
+        types.InlineKeyboardButton("✉️ Обратная связь", callback_data="feedback"),
+        types.InlineKeyboardButton("🛠️ Поддержка", callback_data="support")
     ]
-    db = SessionLocal()
-    if (db.query(Admin).filter(message.from_user.id == Admin.auth_token)):
-        buttons.append(types.InlineKeyboardButton("Изменить", callback_data='change_data'))
     markup.add(*buttons)
     bot.send_message(
         message.chat.id,
@@ -26,12 +23,13 @@ def show_main_menu(bot, message):
         "Выберите интересующий раздел:",
         reply_markup=markup
     )
-
+   
+    # Функця вывода приветственного сообщения
 def greetings(bot, message):
     section = 'greetings'
     db = SessionLocal()
     markup = None
-    if (db.query(Admin).filter(message.from_user.id == Admin.auth_token)):
+    if (db.query(Admin).filter(message.from_user.id == Admin.auth_token).first()):
         markup = types.InlineKeyboardMarkup(row_width=1)
         markup.add(types.InlineKeyboardButton(f"Изменить текст", callback_data=f'edit_section:{section}:greetings'))
     db = ContentSessionLocal()
@@ -51,7 +49,7 @@ def greetings(bot, message):
     finally:
         db.close()
 
-# --- Регистрация обработчиков ---
+# --- Регистрация обработчиков для файла core.py---
 def register_start_handler(bot):
     # Авторизация Пользователей
     def handle_password(message, sent=None):
@@ -74,6 +72,7 @@ def register_start_handler(bot):
             
                 bot.register_next_step_handler(message, handle_password, sent)
                 return
+       
         # Поиск пользователя среди всех юзеров
         if not found:
             user_entry = db.query(User)
@@ -82,6 +81,7 @@ def register_start_handler(bot):
                     found = True
                     break
 
+        # Если пользователь не найден, то функция запускается снова
         if not found:
             bot.delete_message(message.chat.id, sent.message_id)
             bot.delete_message(message.chat.id, message.message_id)
@@ -90,7 +90,6 @@ def register_start_handler(bot):
             bot.register_next_step_handler(message, handle_password, sent)
             return
         
-
         # Обновляем auth_token на telegram_id в обеих таблицах
         if not user.is_authorized:
             user_info = user.user_info
@@ -141,11 +140,9 @@ def register_start_handler(bot):
 
         db.close()    
 
-  
     @bot.message_handler(commands=["menu"])
+    @require_auth(bot)
     def show_menu(message):
-        if not check_auth(bot, message):
-            return
         show_main_menu(bot, message)
         
     @bot.message_handler(commands=["greetings"])

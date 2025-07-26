@@ -46,8 +46,10 @@ def register_tour_handlers(bot):
         )
 
         # Уведомление админу
-        admins = db.query(Admin).all()
+        admins = db.query(Admin)
+        print(admins)
         for admin in admins:
+            print(admin)
             bot.send_message(
                 admin.auth_token,
                 f"🔔 Новая запись на экскурсию:\n"

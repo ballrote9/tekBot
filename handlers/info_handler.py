@@ -2,47 +2,41 @@ from telebot import types
 from database.session import SessionLocal
 from database.content_session import ContentSessionLocal
 from database.models import Admin, Content
-from services.auth_check import require_auth
 import os
 
-def show_info_menu(bot, message):
-    markup = types.InlineKeyboardMarkup(row_width=1)
+from services.auth_check import require_auth
+from services.content_service import show_content
 
-    buttons = [
-        types.InlineKeyboardButton("История компании", callback_data="history"),
-        types.InlineKeyboardButton("Ценности", callback_data="values"),
-        types.InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")
-    ]
-    db = SessionLocal()
-    if (db.query(Admin).filter(message.from_user.id == Admin.auth_token)):
-        buttons.append(types.InlineKeyboardButton(f"Изменить «{buttons[0].text}»", callback_data='edit_section:history:info'))
-        buttons.append(types.InlineKeyboardButton(f"Изменить «{buttons[1].text}»", callback_data='edit_section:values:info'))
 
-    markup.add(*buttons)
-
-    bot.send_message(
-        message.chat.id,
-        "📚 Здесь вы найдете информацию о нашей компании.",
-        reply_markup=markup
-    )
-
-    @bot.callback_query_handler(func=lambda call: call.data in ["history", "values"])
+    # Функция вывода меню для пункта "информация о компании" основного меню
+def register_about_company_menu_handler(bot):
+    # Ловит колбеки, если они из списка колбеков кнопок из подменю "Информация о компании"
+    @bot.callback_query_handler(func=lambda call: call.data in ["history", "values", "info"])
     @require_auth(bot)
-    def show_content(call):
-        section = call.data
-        db = ContentSessionLocal()
-        try:
-            content = db.query(Content).filter(Content.section == section).first()
-            if content:
-                bot.send_message(call.message.chat.id, f"📌 {content.title}\n\n{content.text}")
+    def callback_handler(call):
+        markup = types.InlineKeyboardMarkup(row_width=1)
+        buttons = []
+        db = SessionLocal()
+        if (db.query(Admin).filter(call.from_user.id == Admin.auth_token).first()):
+            buttons.append(types.InlineKeyboardButton(f"Изменить", callback_data=f'edit_section:{call.data}:training'))
+            buttons.append(types.InlineKeyboardButton(f"Назад", callback_data='training'))
+        markup.add(*buttons)
 
-                for file in content.files:
-                    if os.path.exists(file.file_path):
-                        with open(file.file_path, "rb") as f:
-                            bot.send_document(call.message.chat.id, f)
-                    else:
-                        bot.send_message(call.message.chat.id, f"Файл {file.file_path} не найден.")
-            else:
-                bot.send_message(call.message.chat.id, "Информация пока недоступна.")
-        finally:
-            db.close()
+        if call.data == "info":
+            markup = types.InlineKeyboardMarkup(row_width=1)
+            buttons = [
+                types.InlineKeyboardButton("История компании", callback_data="history"),
+                types.InlineKeyboardButton("Ценности", callback_data="values"),
+                types.InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")
+            ]
+           
+            markup.add(*buttons)
+
+            bot.send_message(
+                call.message.chat.id,
+                "📚 Здесь вы найдете информацию о нашей компании.",
+                reply_markup=markup
+            )
+        else:
+            show_content(bot, call, markup)
+    
