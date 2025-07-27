@@ -54,6 +54,9 @@ def register_start_handler(bot):
     # Авторизация Пользователей
     def handle_password(message, sent=None):
         entered_password = message.text.strip()
+        if str(entered_password).lower() in  ["отмена", "отменить", "назад"]:
+            bot.send_message(message.chat.id, "Хорошо, тогда потом для авторизации введите /start")
+            return
         hashed_password = hashlib.sha256(entered_password.encode()).hexdigest()
         telegram_id = message.from_user.id
         found = False
