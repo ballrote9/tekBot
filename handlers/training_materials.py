@@ -13,7 +13,6 @@ def show_training_menu(bot, message):
     db.close()
 
     buttons = []
-    print(f"User ID: {user_id}, is_admin: {is_admin}")
     # Категории
     buttons.append(types.InlineKeyboardButton("📂 Категории", callback_data="training_categories"))
 

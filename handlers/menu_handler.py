@@ -191,7 +191,6 @@ def register_menu_handlers(bot):
     @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_tests_section:"))
     @require_auth(bot)
     def handle_edit_tests(call):
-        print(f"Обработчик редактирования тестов вызван: {call.data}")
         from handlers.tests_handler import show_edit_tests_menu
         show_edit_tests_menu(bot, call.message, call.from_user.id)
         bot.answer_callback_query(call.id)  # Важно: подтверждаем обработку callback
@@ -200,14 +199,12 @@ def register_menu_handlers(bot):
     @require_auth(bot)
     def handle_edit_test(call):
         test_id = int(call.data.split(":")[1])
-        #print(f"Редактирование теста ID: {test_id}")
         # Реализуйте логику редактирования теста
         bot.send_message(call.message.chat.id, f"Редактирование теста ID: {test_id}")
 
     @bot.callback_query_handler(func=lambda call: call.data == "add_new_test")
     @require_auth(bot)
     def handle_add_new_test(call):
-        #print("Добавление нового теста")
         # Реализуйте логику добавления нового теста
         bot.send_message(call.message.chat.id, "Добавление нового теста")
         
@@ -380,11 +377,20 @@ def register_menu_handlers(bot):
         
         elif call.data == "contact_admin":
             markup = types.InlineKeyboardMarkup(row_width=1)
-
-            buttons = [
-                types.InlineKeyboardButton("Изменить", callback_data="edit_section:contact_admin:support"),
-                types.InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")
-            ]
+            uid = call.from_user.id
+            is_admin = (
+                db.query(Admin).filter(Admin.auth_token == uid).first() is not None
+            )
+            markup = types.InlineKeyboardMarkup(row_width=1)
+            if is_admin:
+                buttons = [ 
+                    types.InlineKeyboardButton("Связаться с администраторами ", callback_data="contact_admin"),
+                    types.InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")
+                ]
+            else:
+                buttons = [
+                    types.InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")
+                ]
 
             markup.add(*buttons)
             show_content(bot, call, markup)
