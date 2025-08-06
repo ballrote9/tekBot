@@ -460,6 +460,18 @@ def register_menu_handlers(bot):
         elif call.data == "greetings":
             from handlers.start_handler import greetings
             greetings(bot, call.message)
-        
+
+        elif call.data == "search_emp":
+            from handlers.search_emp_handler import search
+            search(bot, call)
+        elif call.data.startswith("emp_page:"):
+            from handlers.search_emp_handler import handle_employee_page, user_search_cache
+            handle_employee_page(call, bot)
+        elif call.data.startswith("emp_detail:"):
+            from handlers.search_emp_handler import handle_employee_detail
+            handle_employee_detail(call, bot)
+        elif call.data == "back_to_results":
+            from handlers.search_emp_handler import handle_back_to_results
+            handle_back_to_results(call, bot)
         else:
             bot.answer_callback_query(call.id, "Функция пока не реализована")

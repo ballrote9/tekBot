@@ -79,5 +79,10 @@ SECTIONS = {
         "title": "Список администраторов:",
         "description": "@sia_it",
         "allow_file": False
+    },
+    "search_emp": {
+        "title": "Поиск конткактной информации о сотрудниках:",
+        "description": "Введите ФИО сотрудника:",
+        "allow_file": False
     }
 }
