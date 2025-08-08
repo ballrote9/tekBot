@@ -372,7 +372,7 @@ def register_menu_handlers(bot):
         # Поддержка
         elif call.data == "support":
             from handlers.support_handler import show_support
-            show_support(bot, call.message)
+            show_support(bot, call)
         # Конец меню
         
         elif call.data == "contact_admin":
@@ -384,7 +384,7 @@ def register_menu_handlers(bot):
             markup = types.InlineKeyboardMarkup(row_width=1)
             if is_admin:
                 buttons = [ 
-                    types.InlineKeyboardButton("Связаться с администраторами ", callback_data="contact_admin"),
+                    types.InlineKeyboardButton("Изменить текст", callback_data="edit_section:contact_admin:support"),
                     types.InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")
                 ]
             else:
@@ -473,5 +473,8 @@ def register_menu_handlers(bot):
         elif call.data == "back_to_results":
             from handlers.search_emp_handler import handle_back_to_results
             handle_back_to_results(call, bot)
+        elif call.data == "upload_staff":
+            
+            pass
         else:
             bot.answer_callback_query(call.id, "Функция пока не реализована")

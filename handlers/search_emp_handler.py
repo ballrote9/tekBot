@@ -185,7 +185,7 @@ def handle_employee_detail(call, bot):
         # Получаем связанный User по id (не user_id!)
         user = db.query(User).filter(User.id == user_info.id).first()
 
-        # Формируем текст
+        # Формируем текст # испраавить
         full_name = user_info.full_name or "Не указано"
         #position = user_info.position or "Не указана"
         office = user_info.office or "Не указан"

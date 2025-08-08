@@ -21,6 +21,7 @@ from handlers.analytics_handler import generate_users_report, generate_feedback_
 from database.models import Admin
 from handlers.admin_tour_handler import register_admin_tour_handlers
 from handlers.info_handler import register_about_company_menu_handler
+from handlers.upload_emp_handler import register_handlers
 # Если у вас нет admin_content_handler, закомментируйте или удалите эту строку
 # from handlers.admin_content_handler import register_admin_content_callback_handlers
 
@@ -118,6 +119,7 @@ if __name__ == "__main__":
     register_admin_content_callback_handlers(bot)
     register_emp_info_menu_handler(bot)
     register_admin_tour_handlers(bot)
+    register_handlers(bot)
     register_menu_handlers(bot)
 
     

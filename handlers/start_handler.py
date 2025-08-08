@@ -15,7 +15,8 @@ def show_main_menu(bot, message):
         types.InlineKeyboardButton("❓ FAQ", callback_data="faq"),
         types.InlineKeyboardButton("✉️ Обратная связь", callback_data="feedback"),
         types.InlineKeyboardButton("🛠️ Поддержка", callback_data="support"),
-        types.InlineKeyboardButton("Контакты сотрудников", callback_data="search_emp")
+        types.InlineKeyboardButton("Контакты сотрудников", callback_data="search_emp"),
+        types.InlineKeyboardButton("Обновить список сотруднимков", callback_data="upload_staff"),
     ]
     markup.add(*buttons)
     bot.send_message(
@@ -126,7 +127,7 @@ def register_start_handler(bot):
             "Введите пароль:"
         )
         bot.register_next_step_handler(message, handle_password, sent)
-    
+    # Испраавить
     @bot.message_handler(commands=['profile'])
     def profile(message):
         if not check_auth(bot, message):
