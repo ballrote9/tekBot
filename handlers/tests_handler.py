@@ -5,7 +5,6 @@ import traceback
 
 def show_tests_menu(bot, message, user_id):
     try:
-        print("Показать меню тестов вызвано")
         db = SessionLocal()
         tests = db.query(Test).all()
         
@@ -49,24 +48,19 @@ def show_tests_menu(bot, message, user_id):
 
 def show_edit_tests_menu(bot, message, user_id):
     try:
-        print(f"Показать меню редактирования тестов для пользователя {user_id}")
-        
         # Проверка прав администратора
         db_admin = SessionLocal()
         is_admin = db_admin.query(Admin).filter(Admin.auth_token == str(user_id)).first() is not None
         db_admin.close()
         
         if not is_admin:
-            print(f"Пользователь {user_id} не является администратором")
             bot.send_message(message.chat.id, "⛔ У вас нет прав для редактирования тестов")
             return
         
-        print("Пользователь является администратором")
         
         # Получение списка тестов
         db = SessionLocal()
         tests = db.query(Test).all()
-        print(f"Найдено тестов: {len(tests)}")
         
         markup = types.InlineKeyboardMarkup(row_width=1)
         
@@ -85,7 +79,6 @@ def show_edit_tests_menu(bot, message, user_id):
         markup.add(types.InlineKeyboardButton("⬅ Назад", callback_data="training"))
         
         # Отправка сообщения
-        print("Отправка меню редактирования тестов")
         bot.send_message(
             message.chat.id,
             "✏️ Редактирование тестов:",
@@ -105,7 +98,6 @@ def add_test(section, title, url):
         new_test = Test(section=section, title=title, url=url)
         db.add(new_test)
         db.commit()
-        print(f"Добавлен новый тест: {title}")
     except Exception as e:
         db.rollback()
         print(f"Error adding test: {e}")

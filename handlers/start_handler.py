@@ -14,7 +14,9 @@ def show_main_menu(bot, message):
         types.InlineKeyboardButton("📚 Информация для сотрудников", callback_data="training"),
         types.InlineKeyboardButton("❓ FAQ", callback_data="faq"),
         types.InlineKeyboardButton("✉️ Обратная связь", callback_data="feedback"),
-        types.InlineKeyboardButton("🛠️ Поддержка", callback_data="support")
+        types.InlineKeyboardButton("🛠️ Поддержка", callback_data="support"),
+        types.InlineKeyboardButton("Контакты сотрудников", callback_data="search_emp"),
+        types.InlineKeyboardButton("Обновить список сотруднимков", callback_data="upload_staff"),
     ]
     markup.add(*buttons)
     bot.send_message(
@@ -54,6 +56,9 @@ def register_start_handler(bot):
     # Авторизация Пользователей
     def handle_password(message, sent=None):
         entered_password = message.text.strip()
+        if str(entered_password).lower() in  ["отмена", "отменить", "назад"]:
+            bot.send_message(message.chat.id, "Хорошо, тогда потом для авторизации введите /start")
+            return
         hashed_password = hashlib.sha256(entered_password.encode()).hexdigest()
         telegram_id = message.from_user.id
         found = False
@@ -94,11 +99,13 @@ def register_start_handler(bot):
         if not user.is_authorized:
             user_info = user.user_info
             user_info.auth_token = str(telegram_id)
+            user_info.username = str(message.from_user.username)
             user.auth_token = str(telegram_id)
             user.is_authorized = True
             db.add(Authorized_users(
                 auth_token = user.auth_token
             ))
+
             db.commit()
 
             bot.delete_message(message.chat.id, sent.message_id)
@@ -120,7 +127,7 @@ def register_start_handler(bot):
             "Введите пароль:"
         )
         bot.register_next_step_handler(message, handle_password, sent)
-    
+    # Испраавить
     @bot.message_handler(commands=['profile'])
     def profile(message):
         if not check_auth(bot, message):

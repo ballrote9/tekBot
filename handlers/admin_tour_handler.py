@@ -1,7 +1,7 @@
 # handlers/admin_tour_handler.py
 
 from telebot import types
-from database.models import CompanyTour, User_info, TourRegistration
+from database.models import CompanyTour, TourRegistration, Authorized_users
 from database.session import SessionLocal
 from datetime import datetime
 
@@ -50,7 +50,7 @@ def register_admin_tour_handlers(bot):
         bot.send_message(message.chat.id, "✅ Экскурсия успешно добавлена")
 
         # Рассылка всем сотрудникам
-        users = db.query(User_info).all()
+        users = db.query(Authorized_users).all()
         for user in users:
             try:
                 bot.send_message(

@@ -9,7 +9,6 @@ def is_user_authorized(user_id: int):
             db.query(Authorized_users).filter(Authorized_users.auth_token == uid).first() is not None or
             db.query(Admin).filter(Admin.auth_token == uid).first() is not None
         )
-        print(f"[AUTH DEBUG] User id: {uid}, Authorized: {is_authorized}")
         return is_authorized
     except Exception as e:
         print(f"[AUTH ERROR] {e}")
@@ -37,11 +36,9 @@ def check_auth(bot, message):
     user_id = get_user_id_from_message(message)
     
     if user_id is None:
-        print("[AUTH ERROR] Cannot determine user ID")
         bot.reply_to(message, "⛔ Ошибка авторизации.")
         return False
     
-    print(f"[AUTH] Checking user ID: {user_id}")
     
     if not is_user_authorized(user_id):
         bot.reply_to(message, "⛔ Доступ запрещен.")
@@ -54,14 +51,11 @@ def require_auth(bot):
             user_id = get_user_id_from_message(message)
             
             if user_id is None:
-                print("[AUTH DECORATOR] Cannot determine user ID")
                 if hasattr(message, 'id'):  # callback query
                     bot.answer_callback_query(message.id, "⛔ Ошибка авторизации")
                 else:
                     bot.reply_to(message, "⛔ Ошибка авторизации.")
                 return
-            
-            print(f"[AUTH DECORATOR] Checking user ID: {user_id}")
             
             if not is_user_authorized(user_id):
                 if hasattr(message, 'id'):  # Это callback query

@@ -99,7 +99,6 @@ def register_emp_info_menu_handler(bot):
                 types.InlineKeyboardButton("📝 Оформление документов", callback_data="documents"),
                 types.InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")
             ]
-            print(f"[DEBUG] show_employee_info_menu: user_id={call.from_user.id}, is_admin={is_admin}")
             if is_admin:
                 buttons.append(types.InlineKeyboardButton("⏰ Напоминания", callback_data="reminders"))
                 buttons.append(types.InlineKeyboardButton("📊 Отчетность", callback_data="analytics_menu"))  
